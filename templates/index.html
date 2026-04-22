@@ -505,6 +505,8 @@ const OBJ_ICON = {
 
 let ws=null, frames=0, startTime=Date.now(), recording=false, commentaryOn=false;
 let commentaryTimer=null, streaming=false;
+// Browser camera state
+let mediaStream=null, captureVideo=null, captureCanvas=null, captureCtx=null;
 
 // ── Tab switching ──────────────────────────────────────────────────────
 function showTab(name, btn){
@@ -519,34 +521,85 @@ function toggleStream(){
   if(!streaming){ startStream(); } else { stopStream(); }
 }
 
-function startStream(){
-  streaming = true;
-  startTime = Date.now();
-  const btn = document.getElementById('startBtn');
-  btn.textContent='⏹ Stop';
-  btn.classList.add('active');
-  document.getElementById('statusPill').className='status-pill wait';
-  document.getElementById('statusPill').textContent='CONNECTING';
+async function startStream(){
+  // Request browser camera access
+  const overlay = document.getElementById('initOverlay');
+  overlay.innerHTML = `
+    <div class="init-icon">📷</div>
+    <div class="init-title">Requesting Camera...</div>
+    <div class="init-sub">Please allow camera access in your browser</div>`;
+
+  try {
+    mediaStream = await navigator.mediaDevices.getUserMedia({
+      video:{ width:{ideal:1280}, height:{ideal:720}, frameRate:{ideal:30} },
+      audio: false
+    });
+  } catch(err) {
+    overlay.innerHTML = `
+      <div class="init-icon">🚫</div>
+      <div class="init-title" style="color:var(--red)">Camera Access Denied</div>
+      <div class="init-sub">${err.name==='NotFoundError'
+        ? 'No camera found on this device.'
+        : 'Allow camera permission and try again.'}</div>`;
+    return;
+  }
+
+  // Hidden video element to receive camera stream
+  captureVideo = document.createElement('video');
+  captureVideo.srcObject = mediaStream;
+  captureVideo.autoplay = true;
+  captureVideo.muted    = true;
+  captureVideo.playsInline = true;
+  await captureVideo.play();
+  await new Promise(r => { captureVideo.onloadedmetadata = r; });
+
+  // Canvas to extract JPEG frames
+  captureCanvas = document.createElement('canvas');
+  captureCanvas.width  = captureVideo.videoWidth  || 1280;
+  captureCanvas.height = captureVideo.videoHeight || 720;
+  captureCtx = captureCanvas.getContext('2d');
+
+  streaming  = true;
+  startTime  = Date.now();
+  document.getElementById('startBtn').textContent = '⏹ Stop';
+  document.getElementById('startBtn').classList.add('active');
+  setPill('wait','CONNECTING');
   connect();
 }
 
 function stopStream(){
-  streaming=false;
+  streaming = false;
   if(ws){ ws.close(); ws=null; }
-  const btn = document.getElementById('startBtn');
-  btn.textContent='▶ Start'; btn.classList.remove('active');
+  if(mediaStream){ mediaStream.getTracks().forEach(t=>t.stop()); mediaStream=null; }
+  captureVideo=null; captureCanvas=null; captureCtx=null;
+  document.getElementById('startBtn').textContent='▶ Start';
+  document.getElementById('startBtn').classList.remove('active');
   setPill('off','OFFLINE');
   document.getElementById('feed').style.display='none';
-  document.getElementById('initOverlay').classList.remove('hidden');
+  const overlay=document.getElementById('initOverlay');
+  overlay.classList.remove('hidden');
+  overlay.innerHTML=`
+    <div class="init-icon">📷</div>
+    <div class="init-title">Camera Ready</div>
+    <div class="init-sub">Click <strong style="color:var(--accent)">▶ Start</strong> to begin live analysis</div>`;
+}
+
+// Capture one frame from browser camera and send to server
+function captureAndSend(){
+  if(!streaming || !ws || ws.readyState!==WebSocket.OPEN || !captureVideo || !captureCtx) return;
+  captureCtx.drawImage(captureVideo, 0, 0, captureCanvas.width, captureCanvas.height);
+  const b64 = captureCanvas.toDataURL('image/jpeg', 0.85).split(',')[1];
+  ws.send(JSON.stringify({frame: b64}));
 }
 
 function connect(){
   if(!streaming) return;
-  ws = new WebSocket(`ws://${location.host}/ws`);
-  ws.onopen  = () => setPill('live','LIVE');
+  const proto = location.protocol==='https:' ? 'wss' : 'ws';
+  ws = new WebSocket(`${proto}://${location.host}/ws`);
+  ws.onopen  = () => { setPill('live','LIVE'); captureAndSend(); };
   ws.onclose = () => {
     setPill('off','RECONNECTING');
-    if(streaming) setTimeout(connect,2000);
+    if(streaming) setTimeout(connect, 2000);
   };
   ws.onerror = () => ws.close();
   ws.onmessage = ({data}) => {
@@ -557,16 +610,18 @@ function connect(){
     document.getElementById('initOverlay').classList.add('hidden');
     frames++;
     const up = Math.floor((Date.now()-startTime)/1000);
-    document.getElementById('hfps').textContent   = metadata.fps;
-    document.getElementById('hfaces').textContent = metadata.face_count;
-    document.getElementById('hobj').textContent   = (metadata.objects||[]).length;
-    document.getElementById('huptime').textContent= formatTime(up);
-    document.getElementById('sfps').textContent   = metadata.fps;
-    document.getElementById('sfaces').textContent = metadata.face_count;
-    document.getElementById('sobj').textContent   = (metadata.objects||[]).length;
-    document.getElementById('suptime').textContent= formatTime(up);
+    document.getElementById('hfps').textContent    = metadata.fps;
+    document.getElementById('hfaces').textContent  = metadata.face_count;
+    document.getElementById('hobj').textContent    = (metadata.objects||[]).length;
+    document.getElementById('huptime').textContent = formatTime(up);
+    document.getElementById('sfps').textContent    = metadata.fps;
+    document.getElementById('sfaces').textContent  = metadata.face_count;
+    document.getElementById('sobj').textContent    = (metadata.objects||[]).length;
+    document.getElementById('suptime').textContent = formatTime(up);
     renderFaceCards(metadata.faces);
     renderObjects(metadata.objects||[]);
+    // Send next frame immediately after receiving result (natural rate-limiting)
+    captureAndSend();
   };
 }
 

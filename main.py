@@ -278,18 +278,29 @@ async def recording_status():
 
 @app.websocket("/ws")
 async def websocket_stream(websocket: WebSocket):
+    """
+    Browser-camera mode: client captures frames via getUserMedia and sends them
+    as base64 JPEG. Server processes each frame and returns the annotated result.
+    Works on any deployment (local, cloud, HuggingFace Spaces) — no server camera needed.
+    """
     await websocket.accept()
-    cap = cv2.VideoCapture(0)
-    cap.set(cv2.CAP_PROP_FRAME_WIDTH,  1280)
-    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
-    cap.set(cv2.CAP_PROP_FPS,          30)
-
     frame_num = 0
     try:
         while True:
-            ret, frame = cap.read()
-            if not ret:
-                await asyncio.sleep(0.05)
+            # Receive raw camera frame from browser
+            try:
+                data = await asyncio.wait_for(websocket.receive_json(), timeout=10.0)
+            except asyncio.TimeoutError:
+                continue
+
+            raw_b64 = data.get("frame")
+            if not raw_b64:
+                continue
+
+            raw   = base64.b64decode(raw_b64)
+            arr   = np.frombuffer(raw, dtype=np.uint8)
+            frame = cv2.imdecode(arr, cv2.IMREAD_COLOR)
+            if frame is None:
                 continue
 
             processed, metadata = analyzer.process(frame)
@@ -303,24 +314,19 @@ async def websocket_stream(websocket: WebSocket):
                     log_detection({k: v for k, v in face.items() if k != "embedding"})
 
             _, buf = cv2.imencode(".jpg", processed, [cv2.IMWRITE_JPEG_QUALITY, 80])
-            await websocket.send_json({
-                "frame":    base64.b64encode(buf).decode(),
-                "metadata": {k: v for k, v in metadata.items()
-                             if k != "faces" or True},   # strip embeddings from WS payload
-            })
-            # Strip embeddings from WS faces (too large to send every frame)
             metadata["faces"] = [
                 {k: v for k, v in f.items() if k != "embedding"}
                 for f in metadata["faces"]
             ]
-            await asyncio.sleep(0.01)
+            await websocket.send_json({
+                "frame":    base64.b64encode(buf).decode(),
+                "metadata": metadata,
+            })
 
     except WebSocketDisconnect:
         pass
     except Exception as e:
         print(f"[ws] {e}")
-    finally:
-        cap.release()
 
 
 if __name__ == "__main__":
