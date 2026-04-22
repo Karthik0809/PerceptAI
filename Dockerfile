@@ -20,7 +20,7 @@ RUN pip install --no-cache-dir \
     "tqdm>=4.66.0" \
     "ollama>=0.3.0"
 
-# Step B — OpenCV headless (pinned <4.11 because 4.11+ requires numpy>=2, conflicting with TF)
+# Step B — OpenCV headless (pinned <4.11; 4.11+ requires numpy>=2)
 RUN pip install --no-cache-dir "opencv-python-headless==4.10.0.84"
 
 # Step C — MediaPipe (pinned; later versions removed solutions API)
@@ -29,13 +29,11 @@ RUN pip install --no-cache-dir "mediapipe==0.10.14"
 # Step D — scikit-learn
 RUN pip install --no-cache-dir "scikit-learn>=1.4.0"
 
-# Step E — ChromaDB (try stable 0.5.x, fallback to 0.4.24; app works without it)
-RUN pip install --no-cache-dir "chromadb>=0.5.0,<1.0.0" \
-    || pip install --no-cache-dir "chromadb==0.4.24" \
-    || echo "ChromaDB unavailable — face-search and clustering endpoints disabled"
+# Step E — ChromaDB (optional; app falls back if unavailable)
+RUN python -c "import subprocess,sys; r=subprocess.run([sys.executable,'-m','pip','install','--no-cache-dir','chromadb>=0.5.0,<1.0.0']); exit(0)"
 
-# Step F — DeepFace + TensorFlow CPU together so pip can resolve all deps at once
-# --no-deps on deepface skips opencv-python (headless already installed above)
+# Step F — DeepFace + TensorFlow CPU together
+# --no-deps on deepface avoids pulling opencv-python (headless already installed)
 RUN pip install --no-cache-dir "tensorflow-cpu" && \
     pip install --no-cache-dir --no-deps "deepface>=0.0.89" && \
     pip install --no-cache-dir \
