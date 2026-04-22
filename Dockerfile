@@ -16,8 +16,10 @@ RUN pip install --no-cache-dir \
     --extra-index-url https://download.pytorch.org/whl/cpu \
     || echo "PyTorch CPU unavailable — emotion MLP disabled, DeepFace fallback active"
 
-# CLIP for YOLO-World (install before ultralytics)
-RUN pip install --no-cache-dir "git+https://github.com/ultralytics/CLIP.git"
+# CLIP for YOLO-World — use archive URL (git+https blocked on HF build servers)
+RUN pip install --no-cache-dir \
+    "https://github.com/ultralytics/CLIP/archive/refs/heads/main.tar.gz" \
+    || pip install --no-cache-dir "openai-clip"
 
 # CV + data science layer
 RUN pip install --no-cache-dir \
