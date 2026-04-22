@@ -1,3 +1,14 @@
+---
+title: FaceAnalysis Pro
+emoji: 👁️
+colorFrom: green
+colorTo: blue
+sdk: docker
+app_port: 7860
+license: mit
+short_description: Real-time face analysis, hand tracking, body pose & object detection
+---
+
 # FaceAnalysis Pro
 
 A production-quality real-time computer vision system combining face analysis, full-body pose estimation, hand tracking, and object detection — streamed live to a clean browser dashboard. Everything runs locally with no cloud APIs required.
