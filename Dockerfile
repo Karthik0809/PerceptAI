@@ -20,8 +20,8 @@ RUN pip install --no-cache-dir \
     "tqdm>=4.66.0" \
     "ollama>=0.3.0"
 
-# Step B — OpenCV headless
-RUN pip install --no-cache-dir "opencv-python-headless>=4.9.0"
+# Step B — OpenCV headless (pinned <4.11 because 4.11+ requires numpy>=2, conflicting with TF)
+RUN pip install --no-cache-dir "opencv-python-headless==4.10.0.84"
 
 # Step C — MediaPipe (pinned; later versions removed solutions API)
 RUN pip install --no-cache-dir "mediapipe==0.10.14"
