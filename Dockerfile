@@ -29,8 +29,10 @@ RUN pip install --no-cache-dir "mediapipe==0.10.14"
 # Step D — scikit-learn
 RUN pip install --no-cache-dir "scikit-learn>=1.4.0"
 
-# Step E — ChromaDB vector store
-RUN pip install --no-cache-dir "chromadb>=0.5.0,<1.0.0"
+# Step E — ChromaDB (try stable 0.5.x, fallback to 0.4.24; app works without it)
+RUN pip install --no-cache-dir "chromadb>=0.5.0,<1.0.0" \
+    || pip install --no-cache-dir "chromadb==0.4.24" \
+    || echo "ChromaDB unavailable — face-search and clustering endpoints disabled"
 
 # Step F — DeepFace + TensorFlow CPU together so pip can resolve all deps at once
 # --no-deps on deepface skips opencv-python (headless already installed above)
