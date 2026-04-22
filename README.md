@@ -6,7 +6,7 @@ colorTo: blue
 sdk: docker
 app_port: 7860
 license: mit
-short_description: Real-time face analysis, hand tracking, body pose & object detection
+short_description: Face analysis, hand tracking & object detection
 ---
 
 # FaceAnalysis Pro
