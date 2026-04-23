@@ -29,19 +29,23 @@ RUN pip install --no-cache-dir "mediapipe==0.10.14"
 # Step D — scikit-learn
 RUN pip install --no-cache-dir "scikit-learn>=1.4.0"
 
-# Step F — DeepFace + TensorFlow CPU together
-# --no-deps on deepface avoids pulling opencv-python (headless already installed)
-RUN pip install --no-cache-dir "tensorflow-cpu" && \
+# Step F — DeepFace + TensorFlow CPU
+# protobuf must stay <4 for mediapipe==0.10.14; tensorflow-cpu<2.16 is the
+# last series that accepts protobuf 3.x. retina-face/mtcnn installed with
+# --no-deps so they cannot upgrade tensorflow or protobuf.
+RUN pip install --no-cache-dir \
+        "protobuf>=3.20.3,<4.0.0" \
+        "tensorflow-cpu>=2.13.0,<2.16.0" && \
     pip install --no-cache-dir --no-deps "deepface>=0.0.89" && \
-    pip install --no-cache-dir \
+    pip install --no-cache-dir --no-deps \
         "mtcnn>=0.1.0" \
-        "retina-face>=0.0.1" \
+        "retina-face>=0.0.1" && \
+    pip install --no-cache-dir \
         "gdown>=4.0.0" \
         "pandas>=1.3.0" \
         "matplotlib>=3.2.2" \
         "requests>=2.23.0" \
-        "keras" \
-        "tf-keras" \
+        "gunicorn>=20.1.0" \
         "fire" \
         "flask" \
         "flask-cors" \
