@@ -1,6 +1,6 @@
-# FaceAnalysis Pro
+# PerceptAI
 
-**Live Demo:** [karthikmulugu08-faceanalysispro.hf.space](https://karthikmulugu08-faceanalysispro.hf.space)
+**Live Demo:** [karthikmulugu08-perceptai.hf.space](https://karthikmulugu08-perceptai.hf.space)
 
 A real-time computer vision system combining face analysis, full-body pose estimation, hand tracking, and object detection — streamed live to a browser dashboard via WebSocket.
 
@@ -44,8 +44,8 @@ A real-time computer vision system combining face analysis, full-body pose estim
 ## Local Setup
 
 ```bash
-git clone https://github.com/Karthik0809/FaceAnalysisPro.git
-cd FaceAnalysisPro
+git clone https://github.com/Karthik0809/PerceptAI.git
+cd PerceptAI
 python -m venv venv
 venv\Scripts\activate        # Windows
 # source venv/bin/activate   # macOS / Linux
@@ -88,7 +88,7 @@ If Ollama is not running the system falls back to rule-based reports automatical
 ## Project Structure
 
 ```
-FaceAnalysisPro/
+PerceptAI/
 ├── main.py                 # FastAPI app, endpoints, WebSocket stream
 ├── analyzer.py             # Core CV pipeline (face mesh, hands, pose, YOLO)
 ├── llm_reporter.py         # Ollama LLM + ChromaDB + rule-based fallback

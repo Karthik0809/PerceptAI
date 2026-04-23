@@ -16,7 +16,7 @@ from pydantic import BaseModel
 from analyzer import EMOTION_COLORS, FaceAnalyzer
 from db import SESSION_ID, get_history, get_stats, init_db, log_detection
 
-app       = FastAPI(title="Real-Time Face Analysis System", version="3.0.0")
+app       = FastAPI(title="PerceptAI — Real-Time Vision Intelligence", version="3.0.0")
 templates = Jinja2Templates(directory="templates")
 analyzer  = FaceAnalyzer(known_faces_dir="known_faces")
 init_db()
