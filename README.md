@@ -1,6 +1,15 @@
+---
+title: PerceptAI
+emoji: 👁
+colorFrom: blue
+colorTo: purple
+sdk: docker
+pinned: false
+---
+
 # PerceptAI
 
-**Live Demo:** [karthikmulugu08-perceptai.hf.space](https://karthikmulugu08-perceptai.hf.space)
+**Live Demo:** [karthikmulugu08-faceanalysispro.hf.space](https://karthikmulugu08-faceanalysispro.hf.space)
 
 A real-time computer vision system combining face analysis, full-body pose estimation, hand tracking, and object detection — streamed live to a browser dashboard via WebSocket.
 
@@ -100,4 +109,3 @@ PerceptAI/
 ├── requirements.txt
 └── Dockerfile
 ```
-
