@@ -29,6 +29,12 @@ RUN pip install --no-cache-dir "mediapipe==0.10.14" && \
 # Step D — scikit-learn
 RUN pip install --no-cache-dir "scikit-learn>=1.4.0"
 
+# Step E — PyTorch CPU + YOLO-World (object detection)
+# Install CPU-only torch first to avoid downloading 2GB CUDA binaries
+RUN pip install --no-cache-dir \
+        torch torchvision --index-url https://download.pytorch.org/whl/cpu && \
+    pip install --no-cache-dir "ultralytics>=8.2.0"
+
 # Step F — DeepFace + TensorFlow CPU
 # protobuf must stay <4 for mediapipe==0.10.14; tensorflow-cpu<2.16 is the
 # last series that accepts protobuf 3.x. retina-face/mtcnn installed with
