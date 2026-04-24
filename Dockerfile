@@ -2,11 +2,12 @@ FROM python:3.10-slim
 
 WORKDIR /app
 
-# System libs
+# System libs (git required for YOLO-World's CLIP dependency)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libglib2.0-0 libsm6 libxext6 libxrender-dev \
     libgomp1 libgl1 \
     build-essential g++ \
+    git \
     && rm -rf /var/lib/apt/lists/*
 
 # Step A — lightweight API + image libs
@@ -30,9 +31,11 @@ RUN pip install --no-cache-dir "mediapipe==0.10.14" && \
 RUN pip install --no-cache-dir "scikit-learn>=1.4.0"
 
 # Step E — PyTorch CPU + YOLO-World (object detection)
-# Install CPU-only torch first to avoid downloading 2GB CUDA binaries
+# Install CPU-only torch first to avoid downloading 2GB CUDA binaries.
+# Pre-install CLIP (YOLO-World dependency) via git so it doesn't auto-install at runtime.
 RUN pip install --no-cache-dir \
         torch torchvision --index-url https://download.pytorch.org/whl/cpu && \
+    pip install --no-cache-dir "git+https://github.com/ultralytics/CLIP.git" && \
     pip install --no-cache-dir "ultralytics>=8.2.0"
 
 # Pre-download YOLO-World model weights at build time so runtime never needs internet
